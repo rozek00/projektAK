@@ -81,13 +81,6 @@ int __io_getchar(void) {
     }
     return -1;
 }
-
-// Callback do odbioru danych przez UART
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-    newInput = true;
-    HAL_UART_Receive_IT(&huart2, (uint8_t *)&inputChar, 1); // Odbiór danych asynchroniczny
-}
-
 static int x = (SSD1306_WIDTH / 2) -10;
 static int y = SSD1306_HEIGHT / 2;
 int dx = 2;
@@ -174,11 +167,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 }
 void Estimate_Pos() {
 
-if (dx > 0) { // Piłka porusza się w kierunku komputera
+if (dx > 0) { 
 
 int distance_x = komputer.x_pos - x;
 
-if (distance_x > 0) { // Tylko jeśli odległość jest dodatnia
+if (distance_x > 0) { 
 
 int time_to_reach = distance_x / dx;
 
