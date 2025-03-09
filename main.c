@@ -81,6 +81,12 @@ int __io_getchar(void) {
     }
     return -1;
 }
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+    newInput = true;
+    HAL_UART_Receive_IT(&huart2, (uint8_t *)&inputChar, 1); 
+}
+
 static int x = (SSD1306_WIDTH / 2) -10;
 static int y = SSD1306_HEIGHT / 2;
 int dx = 2;
@@ -93,6 +99,14 @@ struct paletka
 struct paletka gracz;
 struct paletka komputer;
 void SetDefault()
+{
+	licznik_punktow=0;
+    dx=2;
+    dy=2;
+    x=SSD1306_WIDTH / 2;
+    y=SSD1306_HEIGHT / 2;
+}
+void Lose()
 {
     dx=2;
     dy=2;
@@ -140,9 +154,9 @@ void updateSquarePosition()
     }
     if (x < 3 && dx < 0) {
     	licznik_punktow++;
-    	sprintf(point_buffer, "Ilosc punktow: %d", licznik_punktow);
-    	HAL_UART_Transmit(&point_buffer, (uint8_t *)point_buffer, strlen(point_buffer), HAL_MAX_DELAY);
-    	SetDefault();
+    	sprintf(point_buffer, "Ilosc punktow: %d\r\n", licznik_punktow); 
+    	HAL_UART_Transmit(&huart2, (uint8_t *)point_buffer, strlen(point_buffer), HAL_MAX_DELAY);
+    	Lose();
     }
     if (x > SSD1306_WIDTH-7 && dx > 0) {
     	x = SSD1306_WIDTH-7;
@@ -165,47 +179,28 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	  SetDefault();
   }
 }
-void Estimate_Pos() {
+void Estimate_Pos()
+{
+    if (dx > 0) {
+        int distance_x = komputer.x_pos - x;
 
-if (dx > 0) { 
-
-int distance_x = komputer.x_pos - x;
-
-if (distance_x > 0) { 
-
-int time_to_reach = distance_x / dx;
-
-int estimated_y = y + dy * time_to_reach;
-
-// Ogranicz estimated_y do zakresu ekranu
-
-if (estimated_y < 0) {
-
-estimated_y = 0;
-
-} else if (estimated_y > SSD1306_HEIGHT - RECHEIGHT) {
-
-estimated_y = SSD1306_HEIGHT - RECHEIGHT;
-
-}
-
-estimated_pos = estimated_y;
-
-}
-
-}
-
-// Poruszaj paletką komputera w kierunku estimated_pos
-
-if (komputer.y_pos < estimated_pos && komputer.y_pos < SSD1306_HEIGHT - RECHEIGHT) {
-
-komputer.y_pos++;
-
-} else if (komputer.y_pos > estimated_pos && komputer.y_pos > 0) {
-
-komputer.y_pos--;
-
-}
+        if (distance_x > 0) {
+            int time_to_reach = distance_x / dx;
+            int estimated_y = y + (dy * time_to_reach);
+            if (estimated_y < 0) {
+                estimated_y = 0;
+            } else if (estimated_y > (SSD1306_HEIGHT - RECHEIGHT))
+            {
+                estimated_y = SSD1306_HEIGHT - RECHEIGHT;
+            }
+            estimated_pos = estimated_y;
+        }
+    }
+    if (komputer.y_pos < estimated_pos && komputer.y_pos < (SSD1306_HEIGHT - RECHEIGHT)) {
+        komputer.y_pos++;
+    } else if (komputer.y_pos > estimated_pos && komputer.y_pos > 0) {
+        komputer.y_pos--;
+    }
 }
 /* USER CODE END 0 */
 
